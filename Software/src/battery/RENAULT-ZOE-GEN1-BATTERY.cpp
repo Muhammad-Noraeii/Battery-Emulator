@@ -132,7 +132,7 @@ void update_values_battery() {  //This function maps all the values fetched via 
 
   datalayer.battery.status.cell_min_voltage_mV = min_cell_mv_value;
   datalayer.battery.status.cell_max_voltage_mV = max_cell_mv_value;
-  datalayer.battery.status.voltage_dV = static_cast<uint32_t>((calculated_total_pack_voltage_mV / 100));  // mV to dV}
+  datalayer.battery.status.voltage_dV = static_cast<uint32_t>((calculated_total_pack_voltage_mV / 100));  // mV to dV
 }
 
 void receive_can_battery(CAN_frame rx_frame) {
@@ -180,6 +180,8 @@ void receive_can_battery(CAN_frame rx_frame) {
     case 0x654:  //SOC
       datalayer.battery.status.CAN_battery_still_alive = CAN_STILL_ALIVE;
       LB_SOC = rx_frame.data.u8[3];
+      if (datalayer.battery.status.bms_status == INACTIVE)
+        datalayer.battery.status.bms_status = ACTIVE;
       break;
     case 0x658:  //SOH - NOTE: Not present on 41kWh battery! (Is this message on 21kWh?)
       datalayer.battery.status.CAN_battery_still_alive = CAN_STILL_ALIVE;

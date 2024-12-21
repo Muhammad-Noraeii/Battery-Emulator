@@ -614,6 +614,8 @@ void receive_can_battery(CAN_frame rx_frame) {
         min_soc_state = (rx_frame.data.u8[8] << 8 | rx_frame.data.u8[9]);
         avg_soc_state = (rx_frame.data.u8[6] << 8 | rx_frame.data.u8[7]);
         max_soc_state = (rx_frame.data.u8[10] << 8 | rx_frame.data.u8[11]);
+        if (datalayer.battery.status.bms_status == INACTIVE)
+          datalayer.battery.status.bms_status = ACTIVE;
       }
 
       if (rx_frame.DLC =
