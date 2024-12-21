@@ -15,6 +15,7 @@
 #include "src/communication/contactorcontrol/comm_contactorcontrol.h"
 #include "src/communication/equipmentstopbutton/comm_equipmentstopbutton.h"
 #include "src/communication/nvm/comm_nvm.h"
+#include "src/communication/precharge_control/precharge_control.h"
 #include "src/communication/rs485/comm_rs485.h"
 #include "src/communication/seriallink/comm_seriallink.h"
 #include "src/datalayer/datalayer.h"
@@ -103,6 +104,10 @@ void setup() {
   init_CAN();
 
   init_contactors();
+
+#ifdef PRECHARGE_CONTROL
+  init_precharge_control();
+#endif  // PRECHARGE_CONTROL
 
   init_rs485();
 
@@ -217,6 +222,9 @@ void core_loop(void* task_time_us) {
       previousMillis10ms = millis();
       led_exe();
       handle_contactors();  // Take care of startup precharge/contactor closing
+#ifdef PRECHARGE_CONTROL
+      handle_precharge_control();
+#endif  // PRECHARGE_CONTROL
     }
     END_TIME_MEASUREMENT_MAX(time_10ms, datalayer.system.status.time_10ms_us);
 
@@ -270,6 +278,30 @@ void core_loop(void* task_time_us) {
 #endif  // FUNCTION_TIME_MEASUREMENT
     if (check_pause_2s.elapsed()) {
       emulator_pause_state_send_CAN_battery();
+    }
+    static bms_status_enum previous_state = FAULT;
+    if (previous_state != datalayer.battery.status.bms_status) {
+      switch (datalayer.battery.status.bms_status) {
+        case ACTIVE:
+          logging.printf("BMS state changed to: OK\n");
+          break;
+        case UPDATING:
+          logging.printf("BMS state changed to: UPDATING\n");
+          break;
+        case FAULT:
+          logging.printf("BMS state changed to: FAULT\n");
+          break;
+        case INACTIVE:
+          logging.printf("BMS state changed to: INACTIVE\n");
+          break;
+        case STANDBY:
+          logging.printf("BMS state changed to: STANDBY\n");
+          break;
+        default:
+          logging.printf("BMS state changed to: ??\n");
+          break;
+      }
+      previous_state = datalayer.battery.status.bms_status;
     }
 
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
